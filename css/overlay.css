@@ -1,0 +1,41 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: transparent;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#dog {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 256px;
+  height: 256px;
+  image-rendering: pixelated;
+  transition: opacity 0.05s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Debug overlay - shows current state, hidden by default */
+#debug {
+  display: none; /* change to 'block' to see live state */
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #0f0;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  z-index: 999;
+  pointer-events: none;
+  white-space: pre;
+}

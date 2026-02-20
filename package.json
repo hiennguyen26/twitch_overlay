@@ -1,0 +1,20 @@
+{
+  "name": "dog-twitch-overlay",
+  "version": "1.0.0",
+  "description": "Twitch dog sprite overlay with mic, WASD, and mouse triggers",
+  "scripts": {
+    "serve": "python3 -m http.server 8080",
+    "input": "node input-server.js",
+    "test": "node tests/run-tests.js",
+    "generate-sprites": "node tests/generate-test-sprites.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "optionalDependencies": {
+    "iohook2": "^0.8.0"
+  },
+  "devDependencies": {},
+  "keywords": ["twitch", "overlay", "obs", "sprite", "vtuber"],
+  "license": "MIT"
+}

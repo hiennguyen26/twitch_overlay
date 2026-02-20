@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Overlay Test Page</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', monospace; background: #1a1a2e; color: #eee; min-height: 100vh; }
+
+    #test-panel {
+      position: fixed; top: 0; right: 0; width: 360px; height: 100vh;
+      background: #16213e; border-left: 2px solid #0f3460; padding: 20px; overflow-y: auto; z-index: 1000;
+    }
+    h1 { font-size: 18px; margin-bottom: 16px; color: #e94560; }
+    h2 { font-size: 14px; margin: 16px 0 8px; color: #53a8b6; border-bottom: 1px solid #0f3460; padding-bottom: 4px; }
+
+    .state-row { display: flex; justify-content: space-between; padding: 4px 8px; margin: 2px 0; border-radius: 4px; font-size: 13px; background: #1a1a2e; }
+    .state-row.active { background: #0f3460; color: #e94560; font-weight: bold; }
+
+    .mic-bar-container { background: #1a1a2e; border-radius: 4px; padding: 8px; margin: 4px 0; }
+    .mic-bar { height: 20px; background: #0f3460; border-radius: 3px; position: relative; }
+    .mic-bar-fill { height: 100%; border-radius: 3px; transition: width 0.05s, background 0.1s; background: #53a8b6; }
+    .mic-bar-fill.talk { background: #0fa; }
+    .mic-bar-fill.scream { background: #e94560; }
+    .threshold-marker { position: absolute; top: 0; height: 100%; width: 2px; background: rgba(255,255,255,0.5); }
+
+    .key-grid { display: grid; grid-template-columns: repeat(3, 60px); gap: 4px; justify-content: center; margin: 8px 0; }
+    .key-btn {
+      width: 60px; height: 44px; background: #1a1a2e; border: 2px solid #0f3460; border-radius: 6px;
+      color: #eee; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: all 0.1s; user-select: none;
+    }
+    .key-btn:hover { border-color: #53a8b6; }
+    .key-btn.active { background: #e94560; border-color: #e94560; }
+    .key-btn.spacer { visibility: hidden; }
+
+    .mouse-btns { display: flex; gap: 8px; justify-content: center; margin: 8px 0; }
+    .mouse-btn {
+      padding: 10px 20px; background: #1a1a2e; border: 2px solid #0f3460; border-radius: 6px;
+      color: #eee; font-size: 13px; cursor: pointer; transition: all 0.1s; user-select: none;
+    }
+    .mouse-btn:hover { border-color: #53a8b6; }
+    .mouse-btn.active { background: #e94560; border-color: #e94560; }
+
+    #auto-test-btn {
+      width: 100%; padding: 12px; margin-top: 16px; background: #e94560; border: none;
+      border-radius: 6px; color: white; font-size: 14px; font-weight: bold; cursor: pointer;
+    }
+    #auto-test-btn:hover { background: #c73350; }
+    #auto-test-btn:disabled { background: #555; cursor: default; }
+
+    #test-log { margin-top: 12px; padding: 8px; background: #0d0d1a; border-radius: 6px; font-size: 11px; max-height: 200px; overflow-y: auto; line-height: 1.6; }
+    .log-pass { color: #0fa; }
+    .log-fail { color: #e94560; }
+    .log-info { color: #53a8b6; }
+
+    #overlay-area {
+      position: fixed; top: 0; left: 0; width: calc(100vw - 360px); height: 100vh;
+      background: repeating-conic-gradient(#2a2a3e 0% 25%, #1a1a2e 0% 50%) 0 0 / 40px 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay-area">
+    <img id="dog" src="sprites/idle_tongue_in.png" alt="" />
+    <div id="debug"></div>
+  </div>
+
+  <div id="test-panel">
+    <h1>Overlay Test Panel</h1>
+
+    <h2>Current State</h2>
+    <div id="state-display"></div>
+
+    <h2>Mic Level</h2>
+    <div class="mic-bar-container">
+      <div class="mic-bar" style="position: relative;">
+        <div class="mic-bar-fill" id="mic-fill" style="width: 0%"></div>
+        <div class="threshold-marker" id="talk-marker"></div>
+        <div class="threshold-marker" id="scream-marker"></div>
+      </div>
+    </div>
+    <div id="mic-value" style="font-size: 12px; text-align: center; margin-top: 4px;"></div>
+
+    <h2>Keyboard (WASD)</h2>
+    <p style="font-size: 11px; color: #888; margin-bottom: 8px;">Press keys or click buttons:</p>
+    <div class="key-grid">
+      <div class="key-btn spacer"></div>
+      <div class="key-btn" data-key="KeyW" id="btn-w">W</div>
+      <div class="key-btn spacer"></div>
+      <div class="key-btn" data-key="KeyA" id="btn-a">A</div>
+      <div class="key-btn" data-key="KeyS" id="btn-s">S</div>
+      <div class="key-btn" data-key="KeyD" id="btn-d">D</div>
+    </div>
+
+    <h2>Mouse</h2>
+    <div class="mouse-btns">
+      <div class="mouse-btn" id="btn-mouse">Click (Mouse 1 / 5)</div>
+    </div>
+
+    <h2>Automated Test</h2>
+    <button id="auto-test-btn">Run Full Test Sequence</button>
+    <div id="test-log"></div>
+  </div>
+
+  <link rel="stylesheet" href="css/overlay.css" />
+  <script src="js/config.js"></script>
+  <script>CONFIG.debug = true;</script>
+  <script src="js/overlay.js"></script>
+
+  <script>
+    const stateDisplay = document.getElementById('state-display');
+    const micFill = document.getElementById('mic-fill');
+    const micValue = document.getElementById('mic-value');
+    const testLog = document.getElementById('test-log');
+    const maxMic = 120;
+
+    document.getElementById('talk-marker').style.left = (CONFIG.mic.talkThreshold / maxMic * 100) + '%';
+    document.getElementById('scream-marker').style.left = (CONFIG.mic.screamThreshold / maxMic * 100) + '%';
+
+    const allStates = Object.keys(CONFIG.sprites);
+
+    function updatePanel() {
+      if (!window.__overlay) return;
+      const current = window.__overlay.getState();
+
+      let html = '';
+      for (const state of allStates) {
+        const isActive = (current === state);
+        const label = Array.isArray(CONFIG.sprites[state]) ? `${state} (animated)` : state;
+        html += `<div class="state-row ${isActive ? 'active' : ''}"><span>${label}</span><span>${isActive ? '◀ ACTIVE' : ''}</span></div>`;
+      }
+      stateDisplay.innerHTML = html;
+
+      const debugEl = document.getElementById('debug');
+      if (debugEl) {
+        const match = debugEl.textContent.match(/mic:\s+([\d.]+)/);
+        if (match) {
+          const level = parseFloat(match[1]);
+          micFill.style.width = Math.min(level / maxMic * 100, 100) + '%';
+          micValue.textContent = level.toFixed(1);
+          micFill.className = 'mic-bar-fill';
+          if (level > CONFIG.mic.screamThreshold) micFill.classList.add('scream');
+          else if (level > CONFIG.mic.talkThreshold) micFill.classList.add('talk');
+        }
+      }
+      requestAnimationFrame(updatePanel);
+    }
+    requestAnimationFrame(updatePanel);
+
+    // Key buttons
+    document.querySelectorAll('.key-btn[data-key]').forEach((btn) => {
+      btn.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); btn.classList.add('active'); window.__overlay.triggerKey(btn.dataset.key); });
+      btn.addEventListener('mouseup', (e) => { e.preventDefault(); e.stopPropagation(); btn.classList.remove('active'); window.__overlay.releaseKey(btn.dataset.key); });
+      btn.addEventListener('mouseleave', () => { btn.classList.remove('active'); window.__overlay.releaseKey(btn.dataset.key); });
+    });
+    window.addEventListener('keydown', (e) => { const btn = document.querySelector(`.key-btn[data-key="${e.code}"]`); if (btn) btn.classList.add('active'); });
+    window.addEventListener('keyup', (e) => { const btn = document.querySelector(`.key-btn[data-key="${e.code}"]`); if (btn) btn.classList.remove('active'); });
+
+    // Mouse button
+    const btnMouse = document.getElementById('btn-mouse');
+    btnMouse.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); btnMouse.classList.add('active'); window.__overlay.triggerMouse(0); });
+    btnMouse.addEventListener('mouseup', (e) => { e.preventDefault(); e.stopPropagation(); btnMouse.classList.remove('active'); window.__overlay.releaseMouse(0); });
+
+    // Auto test
+    function log(msg, type = 'info') {
+      const div = document.createElement('div'); div.className = `log-${type}`; div.textContent = msg;
+      testLog.appendChild(div); testLog.scrollTop = testLog.scrollHeight;
+    }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    async function runAutoTest() {
+      const btn = document.getElementById('auto-test-btn');
+      btn.disabled = true; btn.textContent = 'Running...'; testLog.innerHTML = '';
+      const api = window.__overlay;
+      let passed = 0, failed = 0;
+
+      function check(cond, name) {
+        if (cond) { passed++; log(`✓ ${name}`, 'pass'); }
+        else { failed++; log(`✗ ${name} (state: ${api.getState()})`, 'fail'); }
+      }
+
+      log('Starting tests...', 'info'); await sleep(200);
+
+      // Idle
+      log('\n--- Idle ---', 'info');
+      check(api.getState() === 'idle', 'Initial state is idle');
+
+      // WASD
+      log('\n--- WASD ---', 'info');
+      for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD']) {
+        api.triggerKey(code); await sleep(50);
+        check(api.getState() === 'wasd', `${code} → wasd`);
+        api.releaseKey(code); await sleep(CONFIG.lingering.keyMs + 100);
+        check(api.getState() === 'idle', `${code} release → idle`);
+      }
+
+      // Mouse
+      log('\n--- Mouse ---', 'info');
+      api.triggerMouse(0); await sleep(50);
+      check(api.getState() === 'mouse', 'Mouse 1 → mouse');
+      api.releaseMouse(0); await sleep(CONFIG.lingering.mouseMs + 100);
+      check(api.getState() === 'idle', 'Mouse release → idle');
+
+      api.triggerMouse(4); await sleep(50);
+      check(api.getState() === 'mouse', 'Mouse 5 → mouse');
+      api.releaseMouse(4); await sleep(CONFIG.lingering.mouseMs + 100);
+      check(api.getState() === 'idle', 'Mouse 5 release → idle');
+
+      // Voice
+      log('\n--- Voice ---', 'info');
+      api.setVoiceState('talk'); await sleep(50);
+      check(api.getState() === 'talk', 'talk → talk');
+      await sleep(CONFIG.lingering.voiceMs + 100);
+      check(api.getState() === 'idle', 'talk linger → idle');
+
+      api.setVoiceState('scream'); await sleep(50);
+      check(api.getState() === 'scream', 'scream → scream');
+      await sleep(CONFIG.lingering.voiceMs + 100);
+      check(api.getState() === 'idle', 'scream linger → idle');
+
+      // Priority
+      log('\n--- Priority ---', 'info');
+      api.setVoiceState('talk'); api.triggerKey('KeyW'); await sleep(50);
+      check(api.getState() === 'wasd', 'talk + W → wasd wins');
+      api.releaseKey('KeyW'); await sleep(CONFIG.lingering.keyMs + 100);
+
+      api.triggerKey('KeyD'); api.triggerMouse(0); await sleep(50);
+      check(api.getState() === 'mouse', 'D + mouse → mouse wins');
+      api.releaseKey('KeyD'); api.releaseMouse(0); await sleep(CONFIG.lingering.mouseMs + 100);
+
+      api.setVoiceState('scream'); api.triggerKey('KeyW'); api.triggerMouse(0); await sleep(50);
+      check(api.getState() === 'scream', 'scream + W + mouse → scream wins');
+      api.releaseKey('KeyW'); api.releaseMouse(0);
+      await sleep(Math.max(CONFIG.lingering.voiceMs, CONFIG.lingering.mouseMs) + 200);
+      check(api.getState() === 'idle', 'All released → idle');
+
+      // Multi-key
+      log('\n--- Multi-key ---', 'info');
+      api.triggerKey('KeyW'); api.triggerKey('KeyA'); await sleep(50);
+      check(api.getState() === 'wasd', 'W+A → wasd');
+      api.releaseKey('KeyA'); await sleep(CONFIG.lingering.keyMs + 100);
+      check(api.getState() === 'wasd', 'Release A, W held → still wasd');
+      api.releaseKey('KeyW'); await sleep(CONFIG.lingering.keyMs + 100);
+      check(api.getState() === 'idle', 'Release W → idle');
+
+      log(`\n============================================`, 'info');
+      log(`RESULTS: ${passed} passed, ${failed} failed`, failed > 0 ? 'fail' : 'pass');
+      btn.disabled = false; btn.textContent = 'Run Full Test Sequence';
+    }
+
+    document.getElementById('auto-test-btn').addEventListener('click', runAutoTest);
+  </script>
+</body>
+</html>

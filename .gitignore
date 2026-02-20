@@ -1,0 +1,17 @@
+# Don't commit actual sprites (users supply their own)
+# Run: node tests/generate-test-sprites.js to regenerate placeholders
+sprites/*.png
+
+# Node
+node_modules/
+package-lock.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+*.swo
