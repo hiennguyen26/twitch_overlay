@@ -1,6 +1,5 @@
 # Don't commit actual sprites (users supply their own)
 # Run: node tests/generate-test-sprites.js to regenerate placeholders
-sprites/*.png
 
 # Node
 node_modules/
